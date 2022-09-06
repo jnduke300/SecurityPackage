@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="add_cs_user_privileges_1" author="jackson.nduke">
+        <sql dbms="postgresql" splitStatements="true">
+--             CREATE USER ${user_name} WITH PASSWORD '${password}';
+--             GRANT CONNECT ON DATABASE ${database} TO ${user_name};
+            ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} GRANT SELECT, INSERT, UPDATE, DELETE, REFERENCES
+                                                               ON TABLES TO ${user_name};
+            ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} GRANT USAGE ON SEQUENCES TO ${user_name};
+            ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} GRANT EXECUTE ON FUNCTIONS TO ${user_name};
+        </sql>
+    </changeSet>
+
+    <changeSet id="grant_permission_to_cs_user_1" author="jackson.nduke">
+        <sql dbms="postgresql" splitStatements="true">
+            REVOKE ALL
+                ON ALL TABLES IN SCHEMA ${schema}
+                FROM ${schema};
+
+            GRANT SELECT, INSERT, UPDATE, DELETE
+                  ON ALL TABLES IN SCHEMA ${schema}
+                      TO ${user_name};
+        </sql>
+    </changeSet>
+
+    <changeSet  author="jackson.nduke"  id="modifyDataType-1001">
+        <modifyDataType
+                         columnName="id"
+                         newDataType="java.lang.Long"
+                         tableName="USERS"/>
+    </changeSet>
+
+
+    <changeSet id="create-role-table_1" author="jackson.nduke">
+        <preConditions onFail="MARK_RAN">
+            <not>
+<!--                <tableExists tableName="USERS"/>-->
+                <tableExists tableName="ROLES"/>
+            </not>
+        </preConditions>
+        <createTable tableName="ROLES">
+            <column name="id" type="java.lang.Long">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar2(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint"/>
+        </createTable>
+
+        <createTable tableName="USERS_ROLES">
+            <column name="user_id" type="java.lang.Long">
+                <constraints nullable="false" />
+            </column>
+            <column name="role_id" type="java.lang.Long">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint constraintName="fk_roles"
+                                 baseTableName="USERS_ROLES" baseColumnNames="role_id"
+                                 referencedTableName="ROLES" referencedColumnNames="id" />
+        <addForeignKeyConstraint constraintName="fk_users"
+                                 baseTableName="USERS_ROLES" baseColumnNames="user_id"
+                                 referencedTableName="USERS" referencedColumnNames="id" />
+    </changeSet>
+
+    <changeSet id="add-tenant-id-to-ROLES-table_1" author="jackson.nduke">
+        <addColumn tableName="ROLES">
+            <column name="TENANT_ID" type="VARCHAR(30)" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="ROLES_row_level_security_1" author="jackson.nduke">
+        <sql dbms="postgresql" splitStatements="true">
+            ALTER TABLE ROLES ENABLE ROW LEVEL SECURITY;
+            DROP POLICY IF EXISTS ROLES_tenant_isolation_policy ON ROLES;
+            CREATE POLICY ROLES_tenant_isolation_policy ON ROLES
+            USING (tenant_id = current_setting('app.tenant_id')::VARCHAR);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

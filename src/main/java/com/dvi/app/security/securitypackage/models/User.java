@@ -12,7 +12,7 @@ import java.util.Collection;
 
 @Entity
 @Data
-@Table(name = "tbl_users")
+@Table(name = "USERS")
 @NoArgsConstructor
 public class User extends BaseEntity{
     @NotNull
@@ -23,7 +23,7 @@ public class User extends BaseEntity{
     private boolean enabled;
     private boolean accountNonLocked;
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    @JoinTable(name = "user_role",
+    @JoinTable(name = "ROLES",
     joinColumns = @JoinColumn(name = "user_id"),
     inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Collection<Role> roles = new ArrayList<>();

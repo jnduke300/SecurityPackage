@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 @Entity@Data
-@Table(name="tbl_role")
+@Table(name="ROLES")
 @AllArgsConstructor
 @NoArgsConstructor
 public class Role extends BaseEntity{
